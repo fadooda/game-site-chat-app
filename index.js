@@ -19,9 +19,16 @@ const io = socketio(server,options);
 app.use(router);
 
 io.on('connect', (socket) => {
+  
+  const _id = socket.id
+  console.log('Socket Connected: ' + _id)
+
   socket.on('join', ({ name, room }, callback) => {
     const { error, user } = addUser({ id: socket.id, name, room });
-
+    console.log("name:")
+    console.log(name)
+    console.log("room:")
+    console.log(room)
     if(error) return callback(error);
 
     socket.join(user.room);
@@ -37,12 +44,13 @@ io.on('connect', (socket) => {
   socket.on('sendMessage', (message, callback) => {
     const user = getUser(socket.id);
 
-    io.to(user.room).emit('message', { user: user.name, text: message });
+    if(user)io.to(user.room).emit('message', { user: user.name, text: message });
 
     callback();
   });
 
   socket.on('disconnect', () => {
+    console.log('Socket disconnected: ' + _id)
     const user = removeUser(socket.id);
     console.log(user)
     if(user) {
