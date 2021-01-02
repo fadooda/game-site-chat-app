@@ -1,17 +1,19 @@
 const http = require('http');
 const express = require('express');
 const socketio = require('socket.io');
-
+const router = require('./router');
 
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
 const PORT = process.env.PORT || 9000
 
-const router = require('./router');
 
+
+//handle cores for socketio
 const options={
   cors:true
  }
- 
+
+//create an express app and wrap the http laywer with socketio
 const app = express();
 const server = http.createServer(app);
 const io = socketio(server,options);
@@ -23,12 +25,16 @@ io.on('connect', (socket) => {
   const _id = socket.id
   console.log('Socket Connected: ' + _id)
 
-  socket.on('join', ({ name, room }, callback) => {
+  socket.on('join', ({ name, room }, callback) => { //subscribe to 'join' channel
     const { error, user } = addUser({ id: socket.id, name, room });
+
+    //logging info
     console.log("name:")
     console.log(name)
     console.log("room:")
     console.log(room)
+
+
     if(error) return callback(error);
 
     socket.join(user.room);
@@ -53,6 +59,8 @@ io.on('connect', (socket) => {
     console.log('Socket disconnected: ' + _id)
     const user = removeUser(socket.id);
     console.log(user)
+    
+
     if(user) {
       io.to(user.room).emit('message', { user: 'Admin', text: `${user.name} has left.` });
       io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room)});
